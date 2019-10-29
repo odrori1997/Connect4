@@ -1,4 +1,13 @@
 import numpy as np
+import pygame
+import sys
+import math
+
+BLUE = (0, 0, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
+WHITE = (255, 255, 255)
 
 ROW_COUNT = 6
 COL_COUNT = 7
@@ -47,32 +56,85 @@ def gameWon(board, col):
 
 	return False
 
-def print_board(board):
-	print(np.flip(board, 0))
+
+# For testing
+# def print_board(board):
+# 	print(np.flip(board, 0))
+
+def draw_board(board):
+	board = np.flip(board, 0)
+	for c in range(COL_COUNT):
+		for r in range(ROW_COUNT):
+			pygame.draw.rect(screen, BLUE, (c*SQUARESIZE, r*SQUARESIZE+SQUARESIZE, SQUARESIZE, SQUARESIZE))
+			if board[r][c] == 0:
+				pygame.draw.circle(screen, BLACK, (int(c*SQUARESIZE + SQUARESIZE/2), int(r*SQUARESIZE+SQUARESIZE+SQUARESIZE/2)), RADIUS)
+			elif board[r][c] == 1:
+				pygame.draw.circle(screen, RED, (int(c*SQUARESIZE + SQUARESIZE/2), int(r*SQUARESIZE+SQUARESIZE+SQUARESIZE/2)), RADIUS)
+			else:
+				pygame.draw.circle(screen, YELLOW, (int(c*SQUARESIZE + SQUARESIZE/2), int(r*SQUARESIZE+SQUARESIZE+SQUARESIZE/2)), RADIUS)
+	pygame.display.update()
 
 
 board = create_board()
-print_board(board)
 game_over = False
 turn = 0
 
+# print_board(board)
+pygame.init()
+
+SQUARESIZE = 100
+RADIUS = int(SQUARESIZE/2 - 5)
+
+width = COL_COUNT * SQUARESIZE
+height = (ROW_COUNT+1) * SQUARESIZE
+size = (width, height)
+
+screen = pygame.display.set_mode(size)
+draw_board(board)
+pygame.display.update()
+
+
+myfont = pygame.font.SysFont("Georgia", 75)
+
 while not game_over:
-	if turn == 0:
-		col = int(input("Player 1 enter a column (0-6):"))
 
-	else:
-		col = int(input("Player 2 enter a column (0-6):"))
+	for event in pygame.event.get():
+		if event.type == pygame.QUIT:
+			sys.exit()
 
-	if is_valid_location(board, col):
-		row = get_next_open_row(board, col)
-		board = drop_piece(board, row, col, turn+1)
+		if event.type == pygame.MOUSEMOTION:
+			pygame.draw.rect(screen, BLACK, (0, 0, width, SQUARESIZE))
+			posx = event.pos[0]
+			if turn == 0:
+				pygame.draw.circle(screen, RED, (posx, int(SQUARESIZE/2)), RADIUS)
+			else:
+				pygame.draw.circle(screen, YELLOW, (posx, int(SQUARESIZE/2)), RADIUS)
+			pygame.display.update()
 
-	if gameWon(board, col):
-		game_over = True
-		print("Player %d won!" % turn+1)
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			pygame.draw.rect(screen, BLACK, (0, 0, width, SQUARESIZE))
+			posx = event.pos[0] # x position of mouse
+			col = int(math.floor(posx / SQUARESIZE))
+	 
+			player = int(turn)+1
 
-	print_board(board)
+			if is_valid_location(board, col):
+				row = get_next_open_row(board, col)
+				board = drop_piece(board, row, col, player)
+
+			if gameWon(board, col):
+				game_over = True
+				message = "Player {0} wins!".format(player)
+				label = myfont.render(message, 1, WHITE)
+				screen.blit(label, (10,10))
+				# print("Player %d wins!" % player)
 
 
-	turn += 1
-	turn = turn % 2
+			# print_board(board)
+			draw_board(board)
+
+			turn += 1
+			turn = turn % 2
+
+			if game_over:
+				pygame.time.wait(3000)
